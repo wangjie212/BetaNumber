@@ -105,3 +105,17 @@ function reduce(word1, word2, edges)
     end
     return word,val
 end
+
+function reduce(w)
+    w = sort(w)
+    i = 1
+    while i < length(w)
+        if w[i] == w[i+1]
+            deleteat!(w, i)
+            deleteat!(w, i)
+        else
+            i += 1
+        end
+    end
+    return w
+end

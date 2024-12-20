@@ -1,21 +1,32 @@
-function beta_number(supp, coe, n, edges; QUIET=false)
+function beta_number(supp, coe, n, edges, d; QUIET=false)
     println("********************************** BetaNumber **********************************")
     println("BetaNumber is launching...")
-    tbasis = get_mbasis(n, 6)
+    tbasis = get_mbasis(n, 2*d)
     sort!(tbasis)
     ind = [bfind(tbasis, length(tbasis), [i]) for i = 1:n]
-    basis = [[UInt8[1], UInt8[1]]]
+    basis = [[UInt16[1], UInt16[1]]]
     for i = 1:n
         push!(basis, [[ind[i]], [ind[i]]])
     end
-    for i = 1:n-1, j = i+1:n
-        a = bfind(tbasis, length(tbasis), [i;j])
-        push!(basis, [[ind[i]; a], [ind[i]]], [[ind[i]; a], [ind[j]]])
+    if d > 1
+        for i = 1:n-1, j = i+1:n
+            a = bfind(tbasis, length(tbasis), [i;j])
+            push!(basis, [[ind[i]; a], [ind[j]]], [[ind[j]; a], [ind[i]]])
+        end
     end
-    for i = 1:n-1, j = i+1:n, k in setdiff(Vector(1:n), [i;j])
-        a = bfind(tbasis, length(tbasis), [i;j])
-        b = bfind(tbasis, length(tbasis), sort([i;j;k]))
-        push!(basis, [sort([a; ind[k]]), [b]])
+    if d > 2
+        for i = 1:n-1, j = i+1:n, k in setdiff(Vector(1:n), [i;j])
+            a = bfind(tbasis, length(tbasis), [i;j])
+            b = bfind(tbasis, length(tbasis), sort([i;j;k]))
+            push!(basis, [sort([a; ind[k]]), [b]])
+        end
+    end
+    if d > 3
+        for i = 1:n-1, j = i+1:n, k in setdiff(Vector(1:n), [i;j]), l in setdiff(Vector(k+1:n), [i;j])
+            a = bfind(tbasis, length(tbasis), [i;j])
+            b = bfind(tbasis, length(tbasis), sort([i;j;k;l]))
+            push!(basis, [sort([a; ind[k]; ind[l]]), [b]])
+        end
     end
     tsupp = Vector{UInt16}[]
     lb = length(basis)

@@ -1,43 +1,75 @@
 using BetaNumber
 using PyCall
+using Graphs
 
-graph = [["GCu~fW", [1, 1, 1, 1, 2, 2, 1, 2]],
-["GEnbvs", [1, 1, 1, 2, 2, 1, 2, 2]],
-["GEnbu{", [1, 1, 1, 2, 2, 1, 2, 2]],
-["GEnbv{", [1, 1, 1, 2, 2, 1, 2, 3]],
-["GQjuv[", [1, 1, 1, 1, 1, 1, 1, 1]], 
-["GQjnew", [1, 1, 1, 1, 1, 1, 1, 1]],
-["GQyuvw", [1, 1, 1, 1, 1, 1, 1, 1]],
-["GQyuvs", [1, 1, 1, 1, 1, 1, 1, 1]],
-["GQyuu{", [1, 1, 1, 1, 1, 1, 1, 1]],
-["GQyuv{", [1, 1, 1, 1, 1, 1, 1, 2]],
-["GQyuzw", [1, 1, 1, 1, 1, 1, 1, 1]],
-["GQyu~w", [1, 1, 1, 1, 1, 1, 1, 1]],
-["GQyu~s", [1, 1, 1, 1, 1, 1, 1, 1]],
-["GQyu~[", [1, 1, 1, 1, 1, 1, 1, 1]],
-["GQyuz{", [1, 1, 1, 1, 1, 1, 1, 1]],
-["GQyu~{", [1, 1, 1, 1, 1, 1, 1, 2]],
-["GQz^fS", [1, 1, 1, 1, 1, 1, 1, 1]],
-["GQz^fw", [1, 1, 1, 1, 1, 1, 1, 1]],
-["GQy~ew", [1, 1, 1, 1, 1, 1, 1, 1]],
-["GUZuvw", [1, 1, 1, 1, 1, 1, 1, 1]],
-["GUZuvk", [1, 1, 1, 1, 1, 1, 1, 1]],
-["GUZuv{", [1, 1, 1, 1, 1, 1, 1, 2]],
-["GUZv\\{", [1, 1, 1, 1, 1, 1, 1, 1]]]
+graph = include("E:/project/betanumber/node9_hardcase.txt")
+
+io = open("E:/project/betanumber/node9_32.txt", "w")
 
 ## graph6 code to igraph
-# nx = pyimport("networkx")
-k = 20
-ig6 = graph[k][1]
-edges = [[i+1,j+1] for (i,j) in nx.from_graph6_bytes(codeunits(ig6)).edges()]
-# edges = [[1,2], [1,4], [1,5], [1,7], [2,3], [2,4], [2,5], [3,4], [3,6], [4,5], [4,7], [5,6], [5,7], [6,7]]
-# edges = [[1,2], [2,3], [3,4], [4,5], [1,5], [1,6], [2,6], [3,6], [4,6], [5,6]]
-# edges = [[1, 3], [1, 5], [1, 6], [1, 7], [2, 4], [2, 5], [2, 7], [3, 5], [3, 6], [3, 7], [4, 6], [4, 7], [5, 7], [6, 7]]
-sort!(edges)
-n = 8
+nx = pyimport("networkx")
+n = 9
 supp = [[i;i] for i = 1:n]
-# coe = [ones(5); 2]
-# coe = ones(n)
+# for k = 1:length(graph), l = 1:length(graph[k])-1
+for k = 25:40
+# v = val[s]
+# k = Int(v[1])
+# l = Int(v[2])
+edges = [[i+1,j+1] for (i,j) in nx.from_graph6_bytes(codeunits(graph[k][1])).edges()]
+sort!(edges)
 coe = graph[k][2]
-d = 3
-@time beta_number(supp, coe, n, edges, d, QUIET=true)
+println(k)
+v,moment,basis = beta_number(supp, coe, n, edges, type="huber", QUIET=true)
+G = SimpleGraph(size(moment,2))
+for i = 1:size(moment,2), j = i+1:size(moment,2)
+    if abs(moment[i,j]) > 1e-6
+        add_edge!(G, i, j)
+    end
+end
+blocks = connected_components(G)
+b1 = deepcopy(basis[blocks[1]])
+v,moment,basis = beta_number(supp, coe, n, edges, QUIET=true)
+G = SimpleGraph(size(moment,2))
+for i = 1:size(moment,2), j = i+1:size(moment,2)
+    if abs(moment[i,j]) > 1e-6
+        add_edge!(G, i, j)
+    end
+end
+blocks = connected_components(G)
+b2 = deepcopy(basis[blocks[1]])
+ba = unique([b1; b2])
+v,moment,basis = beta_number(supp, coe, n, edges, basis=ba, QUIET=true)
+write(io, "[$k, $v]\n")
+end
+close(io)
+
+# io = open("E:/project/betanumber/moment.txt", "w")
+# write(io, "$moment")
+# close(io)
+
+ind = Int[]
+for (i,v) in enumerate(val)
+    if abs(max(graph[Int(v[1])][Int(v[2])+1][2], graph[Int(v[1])][Int(v[2])+1][3]) - v[3]) > 1e-5
+        push!(ind, i)
+    end 
+end
+
+val = val[ind]
+
+io = open("E:/project/betanumber/node9_hardcase.txt", "w")
+for s = 1:69
+v = val[s]
+k = Int(v[1])
+l = Int(v[2])
+# println(v[3])
+g = graph[k][1]
+coe = graph[k][l+1][1]
+lb = max(graph[Int(v[1])][Int(v[2])+1][2], graph[Int(v[1])][Int(v[2])+1][3])
+ub = min(v[3], val1[s][3])
+# println(graph[k][l+1][2])
+# println(graph[k][l+1][3])
+if ub - lb > 1e-5
+write(io, "[\"$g\", $coe, $lb, $ub]\n")
+end
+end
+close(io)

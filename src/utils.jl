@@ -34,8 +34,7 @@ function bfind(A, l, a)
     return nothing
 end
 
-function reduce(word1, word2, edges)
-    word = [reverse(word1); word2]
+function reduce!(word, edges)
     val = 1
     i = 1
     while i < length(word)
@@ -53,4 +52,27 @@ function reduce(word1, word2, edges)
         end
     end
     return word,val
+end
+
+function sadd(word1, word2, tbasis, edges)
+    word,v1 = reduce!([reverse(tbasis[word1[2][1]]); tbasis[word2[2][1]]], edges)
+    v2 = reduce!([reverse(tbasis[word2[2][1]]); tbasis[word1[2][1]]], edges)[2]
+    if v1 == v2
+        a = bfind(tbasis, length(tbasis), word)
+        if a == 1 && word1[1] == [1] && word2[1] == [1]
+            word = [1]
+        elseif a == 1 && word1[1] == [1]
+            word = word2[1]
+        elseif a == 1
+            word = sort([word1[1]; word2[1]])
+        elseif word1[1] == [1] && word2[1] == [1]
+            word = [a]
+        elseif word1[1] == [1]
+            word = sort([word2[1]; a])
+        else
+            word = sort([word1[1]; word2[1]; a])
+        end
+        return word,v1
+    end
+    return nothing,nothing
 end

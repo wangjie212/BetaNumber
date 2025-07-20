@@ -26,7 +26,20 @@ for k = 1:length(graph1)
         coe = graph1[k][2]
         lb = graph1[k][3]
         ub = graph2[k][2]
-        write(io, "[\"$g\", $coe, $lb, $ub]\n")
+        write(io, "[\"$g\", $coe, $lb, $ub],\n")
+    end
+end
+close(io)
+
+graph = include("D:/project/betanumber/node9_7_hard.txt")
+io = open("D:/project/betanumber/node9_7_hard1.txt", "w")
+for k = 1:length(graph)
+    if graph[k][4] - graph[k][3] > 1e-3
+        g = graph[k][1]
+        coe = graph[k][2]
+        lb = graph[k][3]
+        ub = graph[k][4]
+        write(io, "[\"$g\", $coe, $lb, $ub],\n")
     end
 end
 close(io)

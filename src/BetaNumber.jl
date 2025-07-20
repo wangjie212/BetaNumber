@@ -2,12 +2,17 @@ module BetaNumber
 
 using JuMP
 using MosekTools
-using Graphs
 
 export beta_number
 
+mutable struct beta_data
+    tbasis
+    basis
+    moment
+end
+
+
 include("utils.jl")
-include("sparsity.jl")
 include("sdp.jl")
 
 end

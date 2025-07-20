@@ -11,18 +11,22 @@ function beta_number(supp, coe, n, edges; order=2, QUIET=false)
     if order > 1
         for i = 1:n-1, j = i+1:n
             a = bfind(tbasis, length(tbasis), [i;j])
-            push!(basis, [sort([ind[i]; a]), [ind[j]]], [sort([ind[j]; a]), [ind[i]]])
+            if bfind(edges, length(edges), [i;j]) === nothing
+                push!(basis, [sort([ind[i]; a]), [ind[j]]], [sort([ind[j]; a]), [ind[i]]])
+            end
             push!(basis, [[ind[i]; ind[j]], [a]])
         end
     end
     if order > 2
         for i = 1:n-1, j = i+1:n, k in setdiff(Vector(1:n), [i;j])
-            a = bfind(tbasis, length(tbasis), [i;j])
-            b = bfind(tbasis, length(tbasis), sort([i;j;k]))
-            push!(basis, [sort([a; ind[k]]), [b]])
-            c = bfind(tbasis, length(tbasis), sort([i;k]))
-            push!(basis, [sort([a; ind[j]; ind[k]]), [c]])
-            push!(basis, [sort([a; ind[i]; ind[j]; ind[k]]), [ind[k]]])
+            if bfind(edges, length(edges), [i;j]) === nothing
+                a = bfind(tbasis, length(tbasis), [i;j])
+                b = bfind(tbasis, length(tbasis), sort([i;j;k]))
+                push!(basis, [sort([a; ind[k]]), [b]])
+                c = bfind(tbasis, length(tbasis), sort([i;k]))
+                push!(basis, [sort([a; ind[j]; ind[k]]), [c]])
+                push!(basis, [sort([a; ind[i]; ind[j]; ind[k]]), [ind[k]]])
+            end
         end
         for i = 1:n-2, j = i+1:n-1, k = j+1:n
             a = bfind(tbasis, length(tbasis), [i;j;k])
@@ -31,26 +35,25 @@ function beta_number(supp, coe, n, edges; order=2, QUIET=false)
     end
     if order > 3
         for i = 1:n-1, j = i+1:n, k in setdiff(Vector(1:n-1), [i;j]), l in setdiff(Vector(k+1:n), [i;j])
-            a = bfind(tbasis, length(tbasis), [i;j])
-            b = bfind(tbasis, length(tbasis), sort([i;j;k;l]))
-            push!(basis, [sort([a; ind[k]; ind[l]]), [b]])
-            # c = bfind(tbasis, length(tbasis), sort([j;k;l]))
-            # push!(basis, [sort([a; ind[i]; ind[k]; ind[l]]), [c]])
-            # c = bfind(tbasis, length(tbasis), sort([i;k;l]))
-            # push!(basis, [sort([a; ind[j]; ind[k]; ind[l]]), [c]])
+            if bfind(edges, length(edges), [i;j]) === nothing
+                a = bfind(tbasis, length(tbasis), [i;j])
+                b = bfind(tbasis, length(tbasis), sort([i;j;k;l]))
+                push!(basis, [sort([a; ind[k]; ind[l]]), [b]])
+                c = bfind(tbasis, length(tbasis), sort([j;k;l]))
+                push!(basis, [sort([a; ind[i]; ind[k]; ind[l]]), [c]])
+                c = bfind(tbasis, length(tbasis), sort([i;k;l]))
+                push!(basis, [sort([a; ind[j]; ind[k]; ind[l]]), [c]])
+            end
         end
-        # for i = 1:n-3, j = i+1:n-2, k = j+1:n-1, l = k+1:n
-        #     a = bfind(tbasis, length(tbasis), [i;j;k;l])
-        #     push!(basis, [[ind[i]; ind[j]; ind[k]; ind[l]], [a]])
-        # end
+        for i = 1:n-3, j = i+1:n-2, k = j+1:n-1, l = k+1:n
+            a = bfind(tbasis, length(tbasis), [i;j;k;l])
+            push!(basis, [[ind[i]; ind[j]; ind[k]; ind[l]], [a]])
+        end
     end
-    tsupp = [sadd(item, item, tbasis, edges)[1] for item in basis]
-    unique!(tsupp)
-    sort!(tsupp)
-    blocks,cl,blocksize = get_blocks(basis, tsupp, tbasis, edges, QUIET=QUIET)
+    lb = length(basis)
     tsupp = Vector{UInt16}[]
-    for k = 1:cl, i = 1:blocksize[k], j = i:blocksize[k]
-        word = sadd(basis[blocks[k][i]], basis[blocks[k][j]], tbasis, edges)[1]
+    for i = 1:lb, j = i:lb
+        word = sadd(basis[i], basis[j], tbasis, edges)[1]
         if word !== nothing
             push!(tsupp, word)
         end
@@ -58,28 +61,20 @@ function beta_number(supp, coe, n, edges; order=2, QUIET=false)
     unique!(tsupp)
     sort!(tsupp)
     ltsupp = length(tsupp)
+    println("The monomial basis has $lb monomials.")
     println("There are $ltsupp affine constraints.")
     model = Model(optimizer_with_attributes(Mosek.Optimizer, "MSK_IPAR_NUM_THREADS" =>4))
     set_optimizer_attribute(model, MOI.Silent(), QUIET)
     cons = [AffExpr(0) for i=1:ltsupp]
-    for k = 1:cl
-        if blocksize[k] == 1
-            pos = @variable(model, lower_bound=0)
-            word = sadd(basis[blocks[k][1]], basis[blocks[k][1]], tbasis, edges)[1]
+    pos = @variable(model, [1:lb, 1:lb], PSD)
+    for i = 1:lb, j = i:lb
+        word,v = sadd(basis[i], basis[j], tbasis, edges)
+        if word !== nothing
             loc = bfind(tsupp, ltsupp, word)
-            @inbounds add_to_expression!(cons[loc], pos)
-        else
-            pos = @variable(model, [1:blocksize[k], 1:blocksize[k]], PSD)
-            for i = 1:blocksize[k], j = i:blocksize[k]
-                word,v = sadd(basis[blocks[k][i]], basis[blocks[k][j]], tbasis, edges)
-                if word !== nothing
-                    loc = bfind(tsupp, ltsupp, word)
-                    if i == j
-                        @inbounds add_to_expression!(cons[loc], pos[i,i])
-                    else
-                        @inbounds add_to_expression!(cons[loc], 2*v, pos[i,j])
-                    end
-                end
+            if i == j
+                @inbounds add_to_expression!(cons[loc], pos[i,i])
+            else
+                @inbounds add_to_expression!(cons[loc], 2*v, pos[i,j])
             end
         end
     end
@@ -104,18 +99,16 @@ function beta_number(supp, coe, n, edges; order=2, QUIET=false)
     end
     println("optimum = $objv")
     dual_var = -dual(con)
-    moment = Vector{Matrix{Float64}}(undef, cl)
-    for k = 1:cl
-        moment[k] = zeros(blocksize[k], blocksize[k])
-        for i = 1:blocksize[k], j = i:blocksize[k]
-            word,v = sadd(basis[blocks[k][i]], basis[blocks[k][j]], tbasis, edges)
-            if word !== nothing
-                loc = bfind(tsupp, ltsupp, word)
-                moment[k][i,j] = moment[k][j,i] = v*dual_var[loc]
-            else
-                moment[k][i,j] = moment[k][j,i] = 0
-            end
+    moment = zeros(lb, lb)
+    for i = 1:lb, j = i:lb
+        word,v = sadd(basis[i], basis[j], tbasis, edges)
+        if word !== nothing
+            loc = bfind(tsupp, ltsupp, word)
+            moment[i,j] = moment[j,i] = v*dual_var[loc]
+        else
+            moment[i,j] = moment[j,i] = 0
         end
     end
-    return objv,moment,basis
+    data = beta_data(tbasis,basis,moment)
+    return objv,data
 end

@@ -2,17 +2,18 @@ using BetaNumber
 using PyCall
 
 nx = pyimport("networkx")
-graph = include("D:/project/betanumber/node8_hardcase.txt")
+graph = include("D:/project/betanumber/node9_hard12.txt")
 io = open("D:/project/betanumber/node8_hardcase2.txt", "w")
 
-n = 8
+n = 9
 supp = [[i;i] for i = 1:n]
 for k = 1:length(graph)
 println(k)
 edges = [[i+1,j+1] for (i,j) in nx.from_graph6_bytes(codeunits(graph[k][1])).edges()]
 sort!(edges)
+println(edges)
 coe = graph[k][2]
-v = beta_number(supp, coe, n, edges, order=3, QUIET=false)[1]
+v = beta_number(supp, coe, n, edges, order=2, QUIET=false)[1]
 write(io, "[$k, $v]\n")
 end
 close(io)
@@ -31,10 +32,10 @@ for k = 1:length(graph1)
 end
 close(io)
 
-graph = include("D:/project/betanumber/node9_7_hard.txt")
-io = open("D:/project/betanumber/node9_7_hard1.txt", "w")
+graph = include("D:/project/betanumber/node9_hard5.txt")
+io = open("D:/project/betanumber/node9_hard12.txt", "w")
 for k = 1:length(graph)
-    if graph[k][4] - graph[k][3] > 1e-3
+    if graph[k][4] - graph[k][3] > 4.7e-4
         g = graph[k][1]
         coe = graph[k][2]
         lb = graph[k][3]

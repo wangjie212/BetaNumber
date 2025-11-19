@@ -63,7 +63,7 @@ function beta_number(supp, coe, n, edges; order=2, QUIET=false)
     ltsupp = length(tsupp)
     println("The monomial basis has $lb monomials.")
     println("There are $ltsupp affine constraints.")
-    model = Model(optimizer_with_attributes(Mosek.Optimizer, "MSK_IPAR_NUM_THREADS" =>4))
+    model = Model(optimizer_with_attributes(Mosek.Optimizer, "MSK_IPAR_NUM_THREADS" => 4))
     set_optimizer_attribute(model, MOI.Silent(), QUIET)
     cons = [AffExpr(0) for i=1:ltsupp]
     pos = @variable(model, [1:lb, 1:lb], PSD)

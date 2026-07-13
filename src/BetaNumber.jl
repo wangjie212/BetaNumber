@@ -3,7 +3,7 @@ module BetaNumber
 using JuMP
 using MosekTools
 
-export beta_number
+export beta_number, delta_number
 
 mutable struct beta_data
     tbasis

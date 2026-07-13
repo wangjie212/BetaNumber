@@ -18,9 +18,9 @@ function lift_basis(basis, n)
     return nbasis
 end
 
-function bfind(A, l, a)
+function bfind(A, a)
     low = 1
-    high = l
+    high = length(A)
     while low <= high
         mid = Int(ceil(1/2*(low+high)))
         if A[mid] ==  a
@@ -43,7 +43,7 @@ function reduce!(word, edges)
             i = i == 1 ? 1 : i-1
         elseif word[i] > word[i+1]
             word[i],word[i+1] = word[i+1],word[i]
-            if bfind(edges, length(edges), word[i:i+1]) !== nothing
+            if bfind(edges, word[i:i+1]) !== nothing
                 val *= -1
             end
             i = i == 1 ? 2 : i-1
@@ -58,7 +58,7 @@ function sadd(word1, word2, tbasis, edges)
     word,v1 = reduce!([reverse(tbasis[word1[2][1]]); tbasis[word2[2][1]]], edges)
     v2 = reduce!([reverse(tbasis[word2[2][1]]); tbasis[word1[2][1]]], edges)[2]
     if v1 == v2
-        a = bfind(tbasis, length(tbasis), word)
+        a = bfind(tbasis, word)
         if a == 1 && word1[1] == [1] && word2[1] == [1]
             word = [1]
         elseif a == 1 && word1[1] == [1]

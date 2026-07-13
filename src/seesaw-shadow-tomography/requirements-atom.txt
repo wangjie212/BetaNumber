@@ -1,0 +1,12 @@
+# Dependencies for Hamiltonian energy estimation (Section VI)
+# Install with: pip install -r requirements-atom.txt
+#
+# NOTE: MOSEK requires a license. If unavailable, the cvxpy solver will
+# fall back to SCS, CVXOPT, or ECOS (included with cvxpy).
+
+cvxpy>=1.8.2
+igraph>=1.0.0
+numpy>=2.0
+pyscf>=2.12.1
+qiskit>=2.4.0
+qiskit-nature>=0.7.2

@@ -1,4 +1,4 @@
-function beta_number(supp, coe, n, edges; order=2, QUIET=false)
+function beta_number(supp, coe, n, edges; order=2, writetofile=false, QUIET=false)
     println("********************************** BetaNumber **********************************")
     println("BetaNumber is launching...")
     tbasis = get_mbasis(n, n)
@@ -86,27 +86,32 @@ function beta_number(supp, coe, n, edges; order=2, QUIET=false)
     cons[1] -= up
     @constraint(model, con, cons==zeros(ltsupp))
     @objective(model, Min, up)
-    if QUIET == false
-        println("Solving the SDP...")
-    end
-    optimize!(model)
-    status = termination_status(model)
-    objv = objective_value(model)
-    if status != MOI.OPTIMAL
-       println("termination status: $status")
-       status = primal_status(model)
-       println("solution status: $status")
-    end
-    println("optimum = $objv")
-    dual_var = -dual(con)
-    moment = zeros(lb, lb)
-    for i = 1:lb, j = i:lb
-        word,v = sadd(basis[i], basis[j], tbasis, edges)
-        if word !== nothing
-            loc = bfind(tsupp, word)
-            moment[i,j] = moment[j,i] = v*dual_var[loc]
-        else
-            moment[i,j] = moment[j,i] = 0
+    if writetofile != false
+        write_to_file(dualize(model), writetofile)
+        objv = moment = nothing
+    else
+        if QUIET == false
+            println("Solving the SDP...")
+        end
+        optimize!(model)
+        status = termination_status(model)
+        objv = objective_value(model)
+        if status != MOI.OPTIMAL
+            println("termination status: $status")
+            status = primal_status(model)
+            println("solution status: $status")
+        end
+        println("optimum = $objv")
+        dual_var = -dual(con)
+        moment = zeros(lb, lb)
+        for i = 1:lb, j = i:lb
+            word,v = sadd(basis[i], basis[j], tbasis, edges)
+            if word !== nothing
+                loc = bfind(tsupp, word)
+                moment[i,j] = moment[j,i] = v*dual_var[loc]
+            else
+                moment[i,j] = moment[j,i] = 0
+            end
         end
     end
     data = beta_data(tbasis,basis,moment)

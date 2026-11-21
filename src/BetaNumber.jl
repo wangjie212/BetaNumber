@@ -2,6 +2,7 @@ module BetaNumber
 
 using JuMP
 using MosekTools
+using Dualization
 
 export beta_number, delta_number
 
